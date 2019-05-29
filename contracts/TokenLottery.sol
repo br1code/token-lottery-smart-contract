@@ -1,21 +1,12 @@
 pragma solidity ^0.5.0;
 
-contract ERC20Interface {
-    function totalSupply() public view returns (uint);
-    function balanceOf(address tokenOwner) public view returns (uint balance);
-    function allowance(address tokenOwner, address spender) public view returns (uint remaining);
-    function transfer(address to, uint tokens) public returns (bool success);
-    function approve(address spender, uint tokens) public returns (bool success);
-    function transferFrom(address from, address to, uint tokens) public returns (bool success);
+import './ERC20Interface.sol';
 
-    event Transfer(address indexed from, address indexed to, uint tokens);
-    event Approval(address indexed tokenOwner, address indexed spender, uint tokens);
-}
+import './Managed.sol';
 
-contract TokenLottery {
-    address public manager;
-    address[] players;
-    address[] lastWinners;
+contract TokenLottery is Managed {
+    address[] private players;
+    address[] private lastWinners;
     address public tokenAddress;
     uint public price;
     uint public totalWinners;
@@ -25,7 +16,6 @@ contract TokenLottery {
 
     constructor(address _tokenAddress, uint _price, uint _totalWinners, uint _minPlayers) public {
         require(_price > 0 && _totalWinners > 0 && _minPlayers > 0 && _totalWinners < _minPlayers, "Invalid arguments");
-        manager = msg.sender;
         tokenAddress = _tokenAddress;
         price = _price;
         totalWinners = _totalWinners;
@@ -46,8 +36,7 @@ contract TokenLottery {
         players.push(msg.sender);
     }
 
-    function pickWinners() public {
-        require(msg.sender == manager, "Sender not authorized.");
+    function pickWinners() public onlyManager {
         require(players.length >= minPlayers, "There are not enough participants");
 
         address[] memory winners = new address[](totalWinners);
@@ -103,5 +92,9 @@ contract TokenLottery {
 
     function encodeData() private view returns (bytes memory) {
         return abi.encodePacked(block.difficulty, now, players);
+    }
+
+    function () external payable {
+        revert("Don't accept ETH");
     }
 }
